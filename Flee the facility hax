@@ -1,0 +1,256 @@
+local Mercury = loadstring(game:HttpGet("https://raw.githubusercontent.com/shezan78/Mercury-Ui-Lib/main/Source.lua"))()
+
+local GUI = Mercury:Create{
+    Name = "Mercury",
+    Size = UDim2.fromOffset(600, 400),
+    Theme = Mercury.Themes.Dark,
+    Link = "https://github.com/shezan78/Mercury-Ui-Lib"
+}
+
+local Tab = GUI:Tab{
+	Name = "Main",
+	Icon = "rbxassetid://8569322835"
+}
+
+local player = game.Players.LocalPlayer
+
+-- Function to change walkspeed
+local function changeWalkspeed(newSpeed)
+    if newSpeed >= 16 and newSpeed <= 100 then
+        player.Character.Humanoid.WalkSpeed = newSpeed
+    else
+        print("Invalid walkspeed value. Please enter a value between 16 and 100.")
+    end
+end
+
+Tab:Slider{
+    Name = "Walkspeed",
+    Default = 16,
+    Min = 0,
+    Max = 100,
+    Callback = function(value) 
+        changeWalkspeed(value)
+    end
+}
+
+local player = game.Players.LocalPlayer
+
+-- Function to change jump power
+local function changeJumpPower(newPower)
+    newPower = tonumber(newPower)
+    if newPower ~= nil and newPower >= 0 and newPower <= 500 then
+        player.Character.Humanoid.JumpPower = newPower
+    else
+        print("Invalid jump power value. Please enter a numerical value between 0 and 500.")
+    end
+end
+
+Tab:Textbox{
+    Name = "Jump Power",
+    Callback = function(text) 
+        changeJumpPower(text)
+    end
+}
+
+local NoclipEnabled = false
+
+-- Function to toggle NoClip
+local function toggleNoClip()
+    NoclipEnabled = not NoclipEnabled
+    if NoclipEnabled then
+        game:GetService("RunService").Stepped:Connect(function()
+            local character = game.Players.LocalPlayer.Character
+            if character and character:FindFirstChild("Head") and character:FindFirstChild("Torso") then
+                character.Head.CanCollide = false
+                character.Torso.CanCollide = false
+            end
+        end)
+    else
+        game:GetService("RunService"):UnbindFromRenderStep("NoClip")
+    end
+end
+
+-- Toggle button for NoClip
+Tab:Toggle{
+    Name = "Toggle NoClip",
+    StartingState = false,
+    Description = nil,
+    Callback = function(state)
+        toggleNoClip()
+    end
+}
+
+local EspEnabled = false
+local Players = game:GetService("Players"):GetChildren()
+local RunService = game:GetService("RunService")
+local highlight = Instance.new("Highlight")
+highlight.Name = "Highlight"
+
+local function toggleEsp()
+    EspEnabled = not EspEnabled
+    if EspEnabled then
+        for i, v in pairs(Players) do
+            repeat wait() until v.Character
+            if not v.Character:FindFirstChild("HumanoidRootPart"):FindFirstChild("Highlight") then
+                local highlightClone = highlight:Clone()
+                highlightClone.Adornee = v.Character
+                highlightClone.Parent = v.Character:FindFirstChild("HumanoidRootPart")
+                highlightClone.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+                highlightClone.Name = "Highlight"
+            end
+        end
+
+        game.Players.PlayerAdded:Connect(function(player)
+            repeat wait() until player.Character
+            if not player.Character:FindFirstChild("HumanoidRootPart"):FindFirstChild("Highlight") then
+                local highlightClone = highlight:Clone()
+                highlightClone.Adornee = player.Character
+                highlightClone.Parent = player.Character:FindFirstChild("HumanoidRootPart")
+                highlightClone.Name = "Highlight"
+            end
+        end)
+
+        game.Players.PlayerRemoving:Connect(function(playerRemoved)
+            playerRemoved.Character:FindFirstChild("HumanoidRootPart").Highlight:Destroy()
+        end)
+
+        RunService.Heartbeat:Connect(function()
+            for i, v in pairs(Players) do
+                repeat wait() until v.Character
+                if not v.Character:FindFirstChild("HumanoidRootPart"):FindFirstChild("Highlight") then
+                    local highlightClone = highlight:Clone()
+                    highlightClone.Adornee = v.Character
+                    highlightClone.Parent = v.Character:FindFirstChild("HumanoidRootPart")
+                    highlightClone.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+                    highlightClone.Name = "Highlight"
+                    task.wait()
+                end
+            end
+        end)
+    else
+        -- Clear ESP
+        for i, v in pairs(game.Players:GetPlayers()) do
+            if v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
+                local highlightInstance = v.Character:FindFirstChild("HumanoidRootPart"):FindFirstChild("Highlight")
+                if highlightInstance then
+                    highlightInstance:Destroy()
+                end
+            end
+        end
+    end
+end
+
+-- Toggle button for ESP
+Tab:Toggle{
+    Name = "Toggle ESP",
+    StartingState = false,
+    Description = nil,
+    Callback = function(state)
+        toggleEsp()
+    end
+}
+
+Tab:Toggle{
+    Name = "Toggle PC ESP",
+    StartingState = false,
+    Description = nil,
+    Callback = function(state)
+        pctoggle = state
+        reloadESP()
+    end
+}
+
+function reloadESP()
+    spawn(function()
+        local map = game.ReplicatedStorage.CurrentMap.Value
+        if map ~= nil then
+            local mapstuff = map:getChildren()
+            for i=1,#mapstuff do
+                if mapstuff[i].Name == "ComputerTable" then
+                    if mapstuff[i]:findFirstChild("Highlight") and not pctoggle then
+                        mapstuff[i].Highlight:remove()
+                    end
+                    if pctoggle and not mapstuff[i]:findFirstChild("Highlight") then
+                        local a = Instance.new("Highlight", mapstuff[i])
+                        a.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+                        a.FillColor = Color3.fromRGB(13, 105, 172) -- avoid display bugs as soon as loads :)
+                        a.OutlineColor = Color3.fromRGB(20, 165, 270) -- avoid display bugs as soon as loads :)
+                        spawn(function()
+                            repeat 
+                                if bestpctoggle and mapstuff[i]:findFirstChild("Screen") then
+                                    if getBestPC()[1].pc ~= nil and mapstuff[i] == getBestPC()[1].pc then
+                                        a.FillColor = mapstuff[i]:findFirstChild("Screen").Color
+                                        a.OutlineColor = Color3.fromRGB(200, 0, 255)
+                                    else
+                                        a.FillColor = mapstuff[i]:findFirstChild("Screen").Color
+                                        a.OutlineColor = Color3.fromRGB(a.FillColor.R*400, a.FillColor.G*400, a.FillColor.B*400)
+                                    end
+                                else
+                                    a.FillColor = mapstuff[i]:findFirstChild("Screen").Color
+                                    a.OutlineColor = Color3.fromRGB(a.FillColor.R*400, a.FillColor.G*400, a.FillColor.B*400)
+                                end
+                                wait(1)
+                            until mapstuff[i] == nil or a == nil
+                        end)
+                    end
+                end
+            end
+        end
+    end)
+end
+
+function getBestPC()
+    local beast = getBeast()
+    local pcs = {}
+
+    local map = game.ReplicatedStorage.CurrentMap.Value
+    if map ~= nil then
+        local mapstuff = map:getChildren()
+        for i=1,#mapstuff do
+            if mapstuff[i].Name == "ComputerTable" then
+                if mapstuff[i].Screen.BrickColor ~= BrickColor.new("Dark green") then
+                    local magnitude = ((mapstuff[i].Screen.Position - beast.Character:findFirstChild("HumanoidRootPart").Position).magnitude)
+                    table.insert(pcs, {magnitude=magnitude, pc=mapstuff[i]})
+                end
+            end
+        end
+    end
+
+    table.sort(pcs, function(a, b) return a.magnitude > b.magnitude end)
+    return pcs
+end
+
+Tab:Toggle{
+    Name = "Toggle Never Fail",
+    StartingState = false,
+    Description = nil,
+    Callback = function(state)
+        spawn(function() -- never fail hacking
+            local mt = getrawmetatable(game)
+            local old = mt.__namecall
+            setreadonly(mt, false)
+            mt.__namecall = newcclosure(function(self, ...)
+                local args = {...}
+                if getnamecallmethod() == 'FireServer' and args[1] == 'SetPlayerMinigameResult' and state then
+                    args[2] = true
+                end
+                return old(self, unpack(args))
+            end)
+        end)
+
+        spawn(function() -- auto interact
+            game.Players.LocalPlayer.PlayerGui.ScreenGui.ActionBox:GetPropertyChangedSignal("Visible"):connect(function()
+                if autointeracttoggle then
+                    game.ReplicatedStorage.RemoteEvent:FireServer("Input", "Action", true)
+                end
+            end)
+        end)
+    end
+}
+
+GUI:Credit{
+	Name = "Arc",
+	Description = "Combined some of the most useful Flee The Facility scripts into you",
+	V3rm = "link/name",
+	Discord = "its_arctrus"
+}
